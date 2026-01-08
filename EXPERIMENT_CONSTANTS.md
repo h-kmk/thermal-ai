@@ -1,0 +1,9 @@
+- N ∈ {64, 128}
+- mu ∈ {2, 5, 10, 20}
+- alpha_train ∈ [0.05, 0.5]
+- alpha_ood ∈ [0.02,0.05) ∪ (0.5,0.8]
+- s_run = 0.8
+- s_ref = 0.4
+- dx = 1/(N-1)
+- tau = mu * dx^2 / alpha
+- expected k ≈ ceil(4*mu/s)

@@ -1,0 +1,22 @@
+# Node
+node_modules/
+dist/
+.vite/
+*.log
+
+# Rust
+target/
+**/*.wasm
+**/*.wat
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

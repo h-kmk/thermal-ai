@@ -1,8 +1,8 @@
 # Experimental Protocol: Thermal-AI Accelerated Simulation (In Review)
 
 **Project:** Thermal-AI (Hybrid Neural–Numerical Physics Engine)
-**Date:** January 2026
-**Objective:** Demonstrate **measurable wall-clock acceleration** of 2D heat diffusion simulation in the browser by learning a **$\mu$-conditioned $\tau$-jump diffusion operator** (temporal super-resolution), and quantify the **speed–accuracy–physics** trade-offs under controlled benchmarks.
+
+**Objective:** Demonstrate **measurable wall-clock acceleration** of 2D heat diffusion simulation in the browser by learning a **μ-conditioned τ-jump diffusion operator** (temporal super-resolution), and quantify the **speed–accuracy–physics** trade-offs under controlled benchmarks.
 
 ---
 
@@ -10,12 +10,12 @@
 
 These constants are fixed for all primary experiments unless explicitly stated (e.g., OOD tests).
 
-- **Grid sizes:** $N \in \{64, 128\}$ (separate datasets and separate models)
-- **Diffusivity (training):** $\alpha \sim \mathrm{Uniform}(0.05, 0.5)$
-- **Diffusivity (OOD extrapolation):** $\alpha \in [0.02,0.05)\cup(0.5,0.8]$
-- **Dimensionless jump set:** $\mu \in \{2, 5, 10, 20\}$
-- **Runtime solver safety factor:** $s_{\text{run}} = 0.8$
-- **Reference solver safety factor:** $s_{\text{ref}} = 0.4$
+- **Grid sizes:** N ∈ {64, 128} (separate datasets and separate models)
+- **Diffusivity (training):** α ~ Uniform(0.05, 0.5)
+- **Diffusivity (OOD extrapolation):** α ∈ [0.02,0.05)∪(0.5,0.8]
+- **Dimensionless jump set:** μ ∈ {2, 5, 10, 20}
+- **Runtime solver safety factor:** s_run = 0.8
+- **Reference solver safety factor:** s_ref = 0.4
 
 ---
 
@@ -23,27 +23,30 @@ These constants are fixed for all primary experiments unless explicitly stated (
 
 ### 1.1 Physical System
 
-We model isotropic 2D heat diffusion on a unit square domain $\Omega=[0,1]\times[0,1]$ for $t\in[0,T]$:
+We model isotropic 2D heat diffusion on a unit square domain Ω=[0,1]×[0,1] for t∈[0,T]:
 
 $$
 \frac{\partial u}{\partial t} = \alpha \nabla^2 u,\quad (x,y)\in\Omega
 $$
 
-- $u(x,y,t)$: temperature field
-- $\alpha>0$: constant diffusivity (scalar) for v1 experiments
+- u(x,y,t): temperature field
+- α>0: constant diffusivity (scalar) for v1 experiments
 
 ### 1.2 Boundary and Initial Conditions
 
 **Boundary conditions (BCs):** Dirichlet, constant sink
+
 $$
 u(x,y,t)=0,\quad (x,y)\in\partial\Omega
 $$
 
 **Initial condition (IC):** generated scalar field
+
 $$
 u(x,y,0)=u_0(x,y)
 $$
-where $u_0$ is sampled from a controlled scenario distribution (Section 4).
+
+where u₀ is sampled from a controlled scenario distribution (Section 4).
 
 ---
 
@@ -51,17 +54,18 @@ where $u_0$ is sampled from a controlled scenario distribution (Section 4).
 
 ### 2.1 Spatial Discretization
 
-Uniform grid with resolution $N\times N$, where $N\in\{64,128\}$.
+Uniform grid with resolution N×N, where N∈{64,128}.
+
 $$
 \Delta x=\Delta y=\frac{1}{N-1}
 $$
+
 We use the standard 5-point Laplacian stencil.
-
-
 
 ### 2.2 Time Integration (Forward Euler)
 
 Explicit update:
+
 $$
 u^{n+1} = u^{n} + \Delta t \,\alpha \nabla^2 u^{n}
 $$
@@ -69,98 +73,114 @@ $$
 ### 2.3 Stability (Enforced, Not User-Set)
 
 For explicit diffusion in 2D, the stability constraint is:
+
 $$
 \Delta t \le \Delta t_{\max}(\alpha, N)=\frac{\Delta x^2}{4\alpha}
 $$
 
 **Implementation policy:**
 
-- The UI does **not** expose $\Delta t$.
-- The solver enforces stability via a safety factor $s\in(0,1)$:
-  $$
-  \Delta t = s\,\Delta t_{\max}(\alpha,N)
-  $$
-- In primary experiments, the *jump magnitude* is controlled by $\mu$ (Section 3.0), which implies $\tau$. The solver chooses substeps to advance by $\tau$ while remaining stable.
+- The UI does **not** expose Δt.
+- The solver enforces stability via a safety factor s∈(0,1):
 
-### 2.4 Advancing by a Physical Time Jump $\tau$
+$$
+\Delta t = s\,\Delta t_{\max}(\alpha,N)
+$$
 
-Given a requested $\tau$, the solver computes:
+- In primary experiments, the *jump magnitude* is controlled by μ (Section 3.0), which implies τ. The solver chooses substeps to advance by τ while remaining stable.
+
+### 2.4 Advancing by a Physical Time Jump τ
+
+Given a requested τ, the solver computes:
+
 $$
 k=\left\lceil \frac{\tau}{\Delta t}\right\rceil,\quad \Delta t'=\frac{\tau}{k}
 $$
-and applies $k$ explicit steps with $\Delta t'$. By construction, $\Delta t' \le \Delta t \le \Delta t_{\max}$, so stability is preserved.
 
-### 2.5 “Reference Labels” vs “Runtime Baseline”
+and applies k explicit steps with Δt'. By construction, Δt' ≤ Δt ≤ Δt_max, so stability is preserved.
+
+### 2.5 "Reference Labels" vs "Runtime Baseline"
 
 To reduce numerical error in training labels and offline evaluation targets, we distinguish:
 
-- **Runtime solver baseline (demo + speed measurement):** $s_{\text{run}}=0.8$
-- **Reference label solver (training/evaluation targets):** $s_{\text{ref}}=0.4$
+- **Runtime solver baseline (demo + speed measurement):** s_run=0.8
+- **Reference label solver (training/evaluation targets):** s_ref=0.4
 
 Both solve the same PDE; only the numerical time step differs.
 
-**Evaluation policy:** All offline accuracy/physics metrics in this protocol use reference labels generated by the **reference solver** ($s_{\text{ref}}$). The runtime solver is used only for interactive visualization and runtime speed measurements.
+**Evaluation policy:** All offline accuracy/physics metrics in this protocol use reference labels generated by the **reference solver** (s_ref). The runtime solver is used only for interactive visualization and runtime speed measurements.
 
 ---
 
 ## 3. Acceleration Hypothesis and Fair Speed Comparison
 
-### 3.0 Primary Jump Parameterization ($\mu \to \tau$)
+### 3.0 Primary Jump Parameterization (μ → τ)
 
 All primary experiments use a fixed set of **dimensionless diffusion numbers**:
+
 $$
 \mu \in \{2, 5, 10, 20\}
 $$
-For each sample (given $\alpha$ and grid spacing $\Delta x$), the physical jump time is computed as:
+
+For each sample (given α and grid spacing Δx), the physical jump time is computed as:
+
 $$
 \tau = \mu\frac{\Delta x^2}{\alpha}
 $$
-This ensures each jump corresponds to a comparable diffusion magnitude across varying $\alpha$ and $N$.
 
-### 3.1 Temporal Super-Resolution ($\tau$-Jump Learning)
+This ensures each jump corresponds to a comparable diffusion magnitude across varying α and N.
 
-We compare both methods on advancing the same physical time $\tau$, where $\tau$ is derived from $\mu$ via $\tau=\mu\Delta x^2/\alpha$.
+### 3.1 Temporal Super-Resolution (τ-Jump Learning)
 
-- **Numerical solver:** advances $u^t \to u^{t+\tau}$ via $k(\alpha,N,\tau)$ stable substeps.
-- **Neural surrogate:** learns an operator $\mathcal{G}_\tau$ such that:
-  $$
-  u^{t+\tau} \approx \mathcal{N}_\theta(u^t; \mu, x, y)
-  $$
+We compare both methods on advancing the same physical time τ, where τ is derived from μ via τ=μΔx²/α.
+
+- **Numerical solver:** advances u^t → u^{t+τ} via k(α,N,τ) stable substeps.
+- **Neural surrogate:** learns an operator G_τ such that:
+
+$$
+u^{t+\tau} \approx \mathcal{N}_\theta(u^t; \mu, x, y)
+$$
 
 ### 3.2 Dimensionless Conditioning (Scale Awareness)
 
-Because grid resolution changes $\Delta x$, we condition the model on the dimensionless diffusion number:
+Because grid resolution changes Δx, we condition the model on the dimensionless diffusion number:
+
 $$
 \mu=\frac{\alpha\tau}{\Delta x^2}
 $$
-In practice, $\mu$ is provided as a broadcast input channel and $x,y$ coordinate channels in $[0,1]$ are included to encode geometry and boundary proximity.
+
+In practice, μ is provided as a broadcast input channel and x,y coordinate channels in [0,1] are included to encode geometry and boundary proximity.
 
 ### 3.3 Speedup Metric (Measured Wall-Clock)
 
-We report two timing definitions for advancing by $\tau$:
+We report two timing definitions for advancing by τ:
 
 1) **Compute-only time (core metric)**
-   - Solver: time inside the $\tau$-advance loop ($k$ substeps).
+   - Solver: time inside the τ-advance loop (k substeps).
    - NN: time spent inside the onnxruntime inference call (e.g., `session.run()`).
 
 2) **End-to-end time (deployment metric)**
-   Includes JS $\leftrightarrow$ WASM marshaling, tensor packing/unpacking, boundary clamping, and any postprocessing. Rendering is excluded unless explicitly stated.
+   Includes JS ↔ WASM marshaling, tensor packing/unpacking, boundary clamping, and any postprocessing. Rendering is excluded unless explicitly stated.
 
 Speedup is reported as:
+
 $$
 \text{Speedup}(\tau)=\frac{T_{\text{solver}}(\tau)}{T_{\text{NN}}(\tau)}
 $$
+
 using both compute-only and end-to-end definitions.
 
 **Reporting requirements:**
 
 - Report **cold-start** vs **warm-start** NN latency separately (shader compilation / JIT effects).
-- Report median over $M$ warm runs after warmup (implementation chooses $M$, documented in results).
-- Report solver $k$ used for each $\mu$. With explicit Euler and $\Delta t=s\Delta t_{\max}$, for fixed $\mu$ one expects:
-  $$
-  k \approx \left\lceil \frac{4\mu}{s} \right\rceil
-  $$
-  so runtime ($s_{\text{run}}=0.8$) yields $k\approx \lceil 5\mu\rceil$ and reference ($s_{\text{ref}}=0.4$) yields $k\approx \lceil 10\mu\rceil$.
+- Report median over M warm runs after warmup (implementation chooses M, documented in results).
+- Report solver k used for each μ. With explicit Euler and Δt=sΔt_max, for fixed μ one expects:
+
+$$
+k \approx \left\lceil \frac{4\mu}{s} \right\rceil
+$$
+
+so runtime (s_run=0.8) yields k≈⌈5μ⌉ and reference (s_ref=0.4) yields k≈⌈10μ⌉.
 
 ---
 
@@ -172,29 +192,30 @@ Training data covers a broad distribution to discourage memorization.
 
 **IC types (examples):**
 
-- Gaussian blobs (1–5 hotspots), varying amplitude and $\sigma$
+- Gaussian blobs (1–5 hotspots), varying amplitude and σ
 - Sharp discontinuities (perfect squares/rectangles)
 - Random noise and smoothed noise
 - Gradients/ramps and mixed compositions
 
 **Normalization (v1):**
 
-- ICs are constrained to be **nonnegative** and normalized to a fixed range (e.g., $[0,1]$); the exact rule is documented in implementation.
+- ICs are constrained to be **nonnegative** and normalized to a fixed range (e.g., [0,1]); the exact rule is documented in implementation.
 - BCs are applied as hard constraints (boundary pixels set to 0).
 
 ### 4.2 Parameters and Sampling (Primary)
 
 | Variable | Distribution / Set | Notes |
 | :--- | :--- | :--- |
-| $\alpha$ | Uniform in $[0.05, 0.5]$ | scalar diffusivity (v1) |
-| Grid $N$ | Separate datasets for $64$ and $128$ | no universal claim by default |
-| $\mu$ | $\{2,5,10,20\}$ | primary jump control |
-| $\tau$ | $\tau=\mu\Delta x^2/\alpha$ | derived per-sample |
+| α | Uniform in [0.05, 0.5] | scalar diffusivity (v1) |
+| Grid N | Separate datasets for 64 and 128 | no universal claim by default |
+| μ | {2,5,10,20} | primary jump control |
+| τ | τ=μΔx²/α | derived per-sample |
 | IC family | categorical | includes discontinuities |
 
 ### 4.3 Dataset Construction
 
 We generate trajectories by simulating each scenario forward in time and sampling multiple pairs:
+
 $$
 (u^t,\mu,\alpha,N) \rightarrow u^{t+\tau} \quad\text{with}\quad \tau=\mu\Delta x^2/\alpha
 $$
@@ -206,17 +227,17 @@ $$
 - Test: 500 trajectories
 - OOD test: curated scenarios (Section 7)
 
-Each trajectory yields multiple $(u^t,\mu)\to u^{t+\tau}$ pairs; total sample counts (pairs) are reported in a dataset summary artifact for reproducibility.
+Each trajectory yields multiple (u^t,μ)→u^{t+τ} pairs; total sample counts (pairs) are reported in a dataset summary artifact for reproducibility.
 
 **Anti-leak rule:** Splits are done by **scenario seed** (trajectory identity), not by individual frames/pairs.
 
 **Recorded metadata per sample:**
 
 - seed, IC type label
-- $N$, $\Delta x$
-- $\alpha$
-- $\mu$, $\tau$
-- reference solver settings used to generate $u^{t+\tau}$ (notably $s_{\text{ref}}$)
+- N, Δx
+- α
+- μ, τ
+- reference solver settings used to generate u^{t+τ} (notably s_ref)
 - (optional) trajectory index / time index for traceability
 
 ---
@@ -228,25 +249,24 @@ We compare three approaches:
 ### A) Numerical Baseline (Rust/WASM Runtime Solver)
 
 - Forward Euler, 5-point stencil
-- Stable adaptive substepping to advance by $\tau$
+- Stable adaptive substepping to advance by τ
 - Serves as the **runtime** baseline for speed measurement and interactive visualization
 
 ### B) Baseline U-Net (Supervised Operator Learner)
 
-
-
-**Architecture:** small fully convolutional U-Net ($\le 4$ levels; lightweight channels for browser)
+**Architecture:** small fully convolutional U-Net (≤4 levels; lightweight channels for browser)
 
 **Inputs (channels):**
 
-- $u^t$ (1)
-- coordinate channels $x,y$ in $[0,1]$ (2)
-- $\mu$ broadcast as a constant channel (1)
+- u^t (1)
+- coordinate channels x,y in [0,1] (2)
+- μ broadcast as a constant channel (1)
   Total: 4 channels
 
-**Output:** $\hat{u}^{t+\tau}$
+**Output:** û^{t+τ}
 
 **Loss (supervised):**
+
 $$
 \mathcal{L}_{data}= \|\hat{u}^{t+\tau}-u^{t+\tau}\|_2^2
 $$
@@ -259,10 +279,11 @@ Same backbone as B, with physics + consistency regularization.
 
 **Outputs (midpoint formulation):**
 
-- $\hat{u}^{t+\tau/2}$ and $\hat{u}^{t+\tau}$
+- û^{t+τ/2} and û^{t+τ}
 
 **Discrete Laplacian (no autograd):**
-Use the fixed 5-point kernel $K$ via convolution:
+Use the fixed 5-point kernel K via convolution:
+
 $$
 K=
 \begin{bmatrix}
@@ -271,29 +292,35 @@ K=
 0&1&0
 \end{bmatrix}
 $$
+
 Discrete Laplacian is computed as:
+
 $$
 \nabla^2 u \approx \frac{(K * u)}{\Delta x^2}
 $$
+
 evaluated on **interior grid points only**; boundary values are clamped to satisfy Dirichlet BCs before residual computation.
 
 **Midpoint physics residual:**
+
 $$
 r = \frac{\hat{u}^{t+\tau}-u^t}{\tau} - \alpha \nabla^2(\hat{u}^{t+\tau/2})
 $$
 
 **Semigroup consistency (operator property):**
-Let $\mathcal{N}_\theta(\cdot;\mu)$ denote the model mapping that returns $\hat u^{t+\tau}$ for the given $\mu$. Enforce:
+Let N_θ(·;μ) denote the model mapping that returns û^{t+τ} for the given μ. Enforce:
+
 $$
 \mathcal{L}_{consist}=\|\mathcal{N}_\theta(\mathcal{N}_\theta(u^t;\mu);\mu)-\mathcal{N}_\theta(u^t;2\mu)\|_2^2
 $$
 
 **Total loss:**
+
 $$
 \mathcal{L}_{total}=\mathcal{L}_{data}+\lambda_1\|r\|_2^2+\lambda_2\mathcal{L}_{consist}
 $$
 
-**Ablations:** Report the effect of $\lambda_1,\lambda_2$ on rollout stability, OOD robustness, and inference speed.
+**Ablations:** Report the effect of λ₁,λ₂ on rollout stability, OOD robustness, and inference speed.
 
 ---
 
@@ -301,30 +328,32 @@ $$
 
 ### 6.1 Accuracy (Primary)
 
-1) **Relative $L_2$ error**
-   $$
-   \epsilon_{rel}=\frac{\|\hat{u}-u\|_2}{\|u\|_2}
-   $$
+1) **Relative L₂ error**
+
+$$
+\epsilon_{rel}=\frac{\|\hat{u}-u\|_2}{\|u\|_2}
+$$
+
 2) **RMSE** and **max error** (supplementary)
-3) **Error vs. $\mu$:** evaluate across $\{2,5,10,20\}$ (with derived $\tau$)
-4) **Long-horizon rollout error:** sequential jumps to simulate $0\to T$, report $\epsilon_{rel}(t)$
+3) **Error vs. μ:** evaluate across {2,5,10,20} (with derived τ)
+4) **Long-horizon rollout error:** sequential jumps to simulate 0→T, report ε_rel(t)
 
 ### 6.2 Physics Fidelity
 
-1) **Residual statistics:** mean/median/percentiles of $\|r\|$ over test sets
+1) **Residual statistics:** mean/median/percentiles of ‖r‖ over test sets
 2) **Maximum principle checks (for nonnegative ICs):**
-   - $\min(u)\ge 0$ (up to numerical tolerance)
-   - $\max(u)$ should be nonincreasing over time
-3) **Dissipation trend:** compare $\|u(t)\|_2$ decay curves to the reference solver
+   - min(u)≥0 (up to numerical tolerance)
+   - max(u) should be nonincreasing over time
+3) **Dissipation trend:** compare ‖u(t)‖₂ decay curves to the reference solver
 
 ### 6.3 Performance (Browser-Relevant)
 
-1) **Latency per $\tau$-advance (ms):**
-   - solver: $T_{\text{solver}}(\tau)$
-   - NN: $T_{\text{NN}}(\tau)$
+1) **Latency per τ-advance (ms):**
+   - solver: T_solver(τ)
+   - NN: T_NN(τ)
      Report both **compute-only** and **end-to-end** definitions.
-2) **Cold vs warm start:** report first inference time vs steady-state median over $M$ warm runs
-3) **Throughput:** $\tau$-advances per second (or frames per second at fixed $\mu$)
+2) **Cold vs warm start:** report first inference time vs steady-state median over M warm runs
+3) **Throughput:** τ-advances per second (or frames per second at fixed μ)
 4) **Model size:** ONNX file size and peak memory (if measurable)
 
 ---
@@ -334,7 +363,7 @@ $$
 The model is considered robust only if it performs reasonably on curated cases outside the training distribution.
 
 1) **Discontinuities:** perfect squares/step edges in IC
-2) **$\alpha$ extrapolation:** evaluate on $\alpha \in [0.02,0.05)\cup(0.5,0.8]$ while keeping $\mu$ fixed and recomputing $\tau=\mu\Delta x^2/\alpha$
+2) **α extrapolation:** evaluate on α ∈ [0.02,0.05)∪(0.5,0.8] while keeping μ fixed and recomputing τ=μΔx²/α
 3) **Boundary stress tests:** hotspots placed adjacent to boundaries
 4) **IC family shift:** gradients/noise patterns not seen in training proportions
 5) **Geometry (stretch):** masked domains (e.g., L-shape) by zeroing regions and treating mask boundaries as sink (exploratory)
@@ -343,14 +372,14 @@ The model is considered robust only if it performs reasonably on curated cases o
 
 ## 8. Resolution Strategy and Claims
 
-### 8.1 Primary (PhD-safe) reporting
+### 8.1 Primary reporting
 
-- Train/evaluate **Model-64** on $64\times64$
-- Train/evaluate **Model-128** on $128\times128$
+- Train/evaluate **Model-64** on 64×64
+- Train/evaluate **Model-128** on 128×128
 
 ### 8.2 Optional exploratory experiment
 
-Cross-resolution tests (e.g., train 64 $\to$ test 128) are labeled explicitly as exploratory and interpreted via $\mu$ scaling. No broad “resolution independence” claim is made unless multi-resolution training is implemented and validated.
+Cross-resolution tests (e.g., train 64 → test 128) are labeled explicitly as exploratory and interpreted via μ scaling. No broad "resolution independence" claim is made unless multi-resolution training is implemented and validated.
 
 ---
 
@@ -358,8 +387,8 @@ Cross-resolution tests (e.g., train 64 $\to$ test 128) are labeled explicitly as
 
 ### 9.1 What We Claim
 
-- The surrogate learns a **$\mu$-conditioned $\tau$-jump diffusion operator** enabling fewer explicit solver substeps per unit simulated time.
-- Speed is measured as **wall-clock ms per $\tau$-advance** (both compute-only and end-to-end), including cold vs warm behavior.
+- The surrogate learns a **μ-conditioned τ-jump diffusion operator** enabling fewer explicit solver substeps per unit simulated time.
+- Speed is measured as **wall-clock ms per τ-advance** (both compute-only and end-to-end), including cold vs warm behavior.
 - The physics-informed variant improves **physical consistency** and/or **rollout robustness** relative to purely supervised training.
 - The approach generalizes to **unseen initial conditions** within the defined distribution and is evaluated on curated OOD tests.
 
@@ -373,17 +402,15 @@ Cross-resolution tests (e.g., train 64 $\to$ test 128) are labeled explicitly as
 
 ## 10. Reproducibility Requirements (Minimum)
 
-To be considered complete, the project must include:
-
 - Scripts to generate datasets (64 and 128)
 - Scripts to train each model and export ONNX
 - A fixed evaluation script producing the tables/plots listed in Section 6
 - Browser demo that logs per run:
-  - $\mu$, $\tau$, $\alpha$, $N$, $\Delta x$
-  - solver $k$, solver wall-time per $\tau$ (compute-only and end-to-end)
-  - NN cold and warm latency per $\tau$ (compute-only and end-to-end)
+  - μ, τ, α, N, Δx
+  - solver k, solver wall-time per τ (compute-only and end-to-end)
+  - NN cold and warm latency per τ (compute-only and end-to-end)
   - error metrics during rollout
 - Dataset summary artifact reporting:
   - number of trajectories and number of sampled pairs
-  - distributions of IC families and $\alpha$
+  - distributions of IC families and α
   - random seeds used for splits (or a deterministic split rule)

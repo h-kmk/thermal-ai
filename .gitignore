@@ -8,6 +8,8 @@ dist/
 target/
 **/*.wasm
 **/*.wat
+**/pkg/
+
 
 # Python
 .venv/
@@ -20,3 +22,26 @@ __pycache__/
 Thumbs.db
 .vscode/
 .idea/
+
+# Datasets / artifacts
+ml/data/
+data/
+outputs/
+*.bin
+*.jsonl
+
+# TypeScript
+*.tsbuildinfo
+
+.env
+.env.*
+
+# Jupyter / ML artifacts
+wandb/
+runs/
+checkpoints/
+models/
+*.onnx
+*.pt
+*.pth
+

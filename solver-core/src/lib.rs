@@ -113,6 +113,21 @@ impl SolverCore {
     pub fn step_tau_ref(&mut self) -> (u32, f32) {
         self.step_tau_with_s(self.s_ref)
     }
+
+    pub fn set_cell(&mut self, x: usize, y: usize, value: f32) {
+        if x >= self.n || y >= self.n { return; }
+        let idx = y * self.n + x;
+        self.field[idx] = value.clamp(0.0, 1.0);
+    }
+    pub fn finalize_ic(&mut self) {
+        self.apply_dirichlet_bc();
+    }
+    pub fn clone_field(&self) -> Vec<f32> {
+        self.field.clone()
+    }
+    
+    
+    
         
 
     // ---- Internal numeric routines ----

@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "solver-core",
+  "solver-rust-wasm"
+]
+resolver = "2"

@@ -31,6 +31,7 @@ export default function App() {
   const imageDataRef = useRef<ImageData | null>(null);
 
 
+
   useEffect(() => {
     (async () => {
       await init();
@@ -151,14 +152,20 @@ export default function App() {
   function stepOnce() {
     const s = solverRef.current;
     if (!s) return;
-
+  
     const info = s.step_tau();
-    setKUsed(info.k);
-    setComputeMs(info.compute_ms);
-    setTauRust(info.tau);
-
+  
+    const k = info.k();
+    const ms = info.compute_ms();
+    const tau = info.tau();
+  
+    setKUsed(k);
+    setComputeMs(ms);
+    setTauRust(tau);
+  
     drawHeatmap(s);
   }
+  
 
   function resetField() {
     const s = solverRef.current;
@@ -270,5 +277,6 @@ export default function App() {
         </div>
       </div>
     </div>
+    
   );
 }

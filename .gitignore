@@ -24,11 +24,14 @@ Thumbs.db
 .idea/
 
 # Datasets / artifacts
-ml/data/
-data/
+ml/data/*
+!ml/data/FORMAT.md
 outputs/
-*.bin
-*.jsonl
+ml/data/
+ml/data_gen/**/out/
+outputs/
+data/
+
 
 # TypeScript
 *.tsbuildinfo
@@ -45,3 +48,6 @@ models/
 *.pt
 *.pth
 
+# Rust tooling
+**/.cargo/
+**/*.rmeta

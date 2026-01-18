@@ -27,11 +27,7 @@ Thumbs.db
 ml/data/*
 !ml/data/FORMAT.md
 outputs/
-ml/data/
 ml/data_gen/**/out/
-outputs/
-data/
-
 
 # TypeScript
 *.tsbuildinfo
